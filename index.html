@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Claude Ofis</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#150b22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ofis">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="ikon-180.png">
+<link rel="icon" type="image/png" href="ikon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: tek sütun, telefon önce; yumuşak "blob" yüzeyler, neon vurgular, hap biçimli düğmeler */
+:root{
+  --bg:#fff5fb; --yuzey:#ffffff; --yuzey2:#fdebf6; --ink:#24142f; --soluk:#7a6585; --cizgi:#f3d7ea;
+  --pembe:#e8187f; --lime:#5f9e00; --turkuaz:#0a8fb8; --mor:#7b45e6;
+  --ok:#15803d; --uyari:#c2410c; --bekle:#6b7280; --hata:#be123c;
+  --display:"Quicksand", "Trebuchet MS", system-ui, sans-serif;
+  --govde:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r:24px; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#150b22; --yuzey:#20132f; --yuzey2:#2a1a3d; --ink:#f6eefc; --soluk:#b9a6c9; --cizgi:#3a2852;
+  --pembe:#ff4fa7; --lime:#b6ff3b; --turkuaz:#3fd3ff; --mor:#a98bff; --ok:#4ade80; --uyari:#fb923c; --bekle:#a1a1aa; --hata:#fb7185; color-scheme:dark }}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--govde);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+.sayfa{max-width:640px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:22px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:28px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
+.ust{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ust .sag{display:flex;align-items:center;gap:8px}
+.taze{font-size:12px;color:var(--soluk);font-variant-numeric:tabular-nums}
+.taze.eski{color:var(--uyari)}
+.blob{position:relative;background:var(--yuzey);border-radius:var(--r);padding:18px;border:1px solid var(--cizgi);overflow:hidden}
+.gm{background:linear-gradient(135deg, color-mix(in srgb, var(--mor) 14%, var(--yuzey)), color-mix(in srgb, var(--pembe) 12%, var(--yuzey)));border:0}
+.gm::after{content:"";position:absolute;right:-40px;top:-40px;width:140px;height:120px;border-radius:58% 42% 61% 39% / 47% 55% 45% 53%;background:color-mix(in srgb, var(--lime) 30%, transparent)}
+.gm .etiket{font-family:var(--display);font-weight:700;font-size:13px;color:var(--mor);text-transform:uppercase;letter-spacing:.06em;position:relative;z-index:1}
+.gm p{margin:6px 0 0;position:relative;z-index:1;white-space:pre-line}
+.gm p.kisa{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.gm .devam{position:relative;z-index:1;margin-top:8px;background:none;border:0;padding:0;color:var(--mor);font:700 13px var(--display);cursor:pointer}
+.is-ver{display:flex;flex-direction:column;gap:10px}
+textarea,input[type=password]{width:100%;font:inherit;color:inherit;background:var(--yuzey2);border:1px solid var(--cizgi);border-radius:18px;padding:12px 14px}
+textarea{resize:vertical;min-height:72px}
+textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--pembe);outline-offset:2px}
+.hap{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--display);font-weight:700;font-size:14px;padding:10px 16px;border-radius:999px;text-decoration:none;border:0;cursor:pointer}
+.hap.ana{background:var(--pembe);color:#fff}
+.hap.ana[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.hap.ikincil{background:var(--yuzey2);color:var(--ink);border:1px solid var(--cizgi)}
+.hap.kucuk{padding:6px 12px;font-size:13px}
+.not{font-size:12px;color:var(--soluk);margin:0}
+.liste{display:flex;flex-direction:column;gap:10px}
+.firsat{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:start;background:var(--yuzey);border:1px solid var(--cizgi);border-radius:20px;padding:12px 14px}
+.firsat .rozet{grid-row:span 2;font-family:var(--display);font-weight:700;font-size:12px;padding:4px 10px;border-radius:999px;background:color-mix(in srgb, var(--lime) 22%, transparent);white-space:nowrap;font-variant-numeric:tabular-nums}
+.firsat .kim{font-size:12px;color:var(--soluk)}
+.firsat .metin{min-width:0;overflow-wrap:anywhere}
+.firsat a{color:var(--turkuaz);font-weight:600}
+.kart{background:var(--yuzey);border:1px solid var(--cizgi);border-radius:var(--r);overflow:hidden}
+.kart summary{list-style:none;display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:14px;cursor:pointer}
+.kart summary::-webkit-details-marker{display:none}
+.avatar{width:44px;height:44px;border-radius:46% 54% 52% 48% / 55% 45% 55% 45%;display:grid;place-items:center;font-size:22px}
+.kart .ad{font-family:var(--display);font-weight:700;font-size:16px}
+.kart .unvan{font-size:13px;color:var(--soluk)}
+.durum{font-family:var(--display);font-weight:700;font-size:12px;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.d-tamam{background:color-mix(in srgb, var(--ok) 16%, transparent);color:var(--ok)}
+.d-calisiyor{background:color-mix(in srgb, var(--uyari) 16%, transparent);color:var(--uyari)}
+.d-hazir{background:color-mix(in srgb, var(--turkuaz) 16%, transparent);color:var(--turkuaz)}
+.d-beklemede{background:color-mix(in srgb, var(--bekle) 16%, transparent);color:var(--bekle)}
+.kart .icerik{padding:12px 14px 16px;display:flex;flex-direction:column;gap:10px;border-top:1px dashed var(--cizgi)}
+.kart .icerik h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--pembe)}
+.kart .icerik p{margin:0}
+.dugmeler{display:flex;flex-wrap:wrap;gap:8px}
+.isler .satir{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:var(--yuzey);border:1px solid var(--cizgi);border-radius:18px;padding:10px 14px;text-decoration:none;color:inherit}
+.isler .no{font-family:var(--display);font-weight:700;color:var(--soluk);font-variant-numeric:tabular-nums}
+.isler .baslik{min-width:0;overflow-wrap:anywhere}
+.bos{background:var(--yuzey2);border-radius:var(--r);padding:18px;color:var(--soluk)}
+/* kilit ekranı */
+.kilit{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px))}
+.kilit form{width:100%;max-width:380px;background:var(--yuzey);border:1px solid var(--cizgi);border-radius:28px;padding:26px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden}
+.kilit form::before{content:"";position:absolute;left:-50px;bottom:-60px;width:170px;height:150px;border-radius:61% 39% 52% 48% / 44% 58% 42% 56%;background:color-mix(in srgb, var(--pembe) 22%, transparent)}
+.kilit form > *{position:relative}
+.kilit label.kutu{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--soluk)}
+.kilit .hata{color:var(--hata);font-size:14px;min-height:20px}
+/* rapor okuyucu */
+.okuyucu{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.okuyucu header{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px max(16px, env(safe-area-inset-right, 0px)) 12px max(16px, env(safe-area-inset-left, 0px));border-bottom:1px solid var(--cizgi);background:var(--yuzey)}
+.okuyucu header b{font-family:var(--display);font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.okuyucu article{overflow:auto;-webkit-overflow-scrolling:touch;padding:18px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px));max-width:680px;width:100%;margin:0 auto;overflow-wrap:anywhere}
+.okuyucu article h1{font-size:22px}.okuyucu article h2{font-size:18px;margin-top:24px;color:var(--pembe)}.okuyucu article h3{font-size:16px;margin-top:16px}
+.okuyucu article a{color:var(--turkuaz)}
+.okuyucu article table{border-collapse:collapse;font-size:13px;display:block;overflow-x:auto;max-width:100%}
+.okuyucu article th,.okuyucu article td{border:1px solid var(--cizgi);padding:6px 8px;text-align:left;vertical-align:top}
+.okuyucu article th{background:var(--yuzey2)}
+.okuyucu article code{background:var(--yuzey2);padding:1px 5px;border-radius:6px}
+@media (prefers-reduced-motion: no-preference){.kart[open] .icerik{animation:ac .18s ease-out}@keyframes ac{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}}
+</style>
+</head>
+<body>
+
+<div class="kilit" id="kilit">
+  <form id="kilitForm" autocomplete="on">
+    <h1>Claude Ofis</h1>
+    <p class="not">Ofis verisi şifreli. Açmak için ofis şifrenizi yazın.</p>
+    <input id="sifre" type="password" autocomplete="current-password" placeholder="Şifre" required>
+    <label class="kutu"><input type="checkbox" id="hatirla" checked> Bu cihazda hatırla</label>
+    <button class="hap ana" id="ac">Aç</button>
+    <div class="hata" id="kilitHata" role="alert"></div>
+  </form>
+</div>
+
+<main class="sayfa" id="uygulama" hidden>
+  <div class="ust">
+    <h1>Claude Ofis</h1>
+    <div class="sag"><span class="taze" id="taze"></span><button class="hap ikincil kucuk" id="yenile">Yenile</button></div>
+  </div>
+
+  <section class="blob gm" aria-label="Genel Müdür özeti">
+    <div class="etiket">👔 Genel Müdür</div>
+    <p id="gmOzet" class="kisa"></p>
+    <button class="devam" id="gmDevam" hidden>Devamı</button>
+  </section>
+
+  <section class="blob is-ver" aria-label="Yeni iş ver">
+    <h2>📨 Genel Müdüre iş ver</h2>
+    <label for="isMetni" class="not">Ne istediğinizi yazın; özel GitHub deponuzda not olarak açılır, bilgisayar 1–2 dakikada işe başlar.</label>
+    <textarea id="isMetni" placeholder="Örn: Mira 60 m² kafe için 3 konsept önersin"></textarea>
+    <div class="dugmeler">
+      <a class="hap ana" id="isGonder" href="#" target="_blank" rel="noopener" aria-disabled="true">GitHub'da gönder</a>
+      <a class="hap ikincil" id="depoLink" href="#" target="_blank" rel="noopener">Özel depo</a>
+    </div>
+  </section>
+
+  <section class="liste" aria-labelledby="fBaslik"><h2 id="fBaslik">🔔 Fırsatlar</h2><div class="liste" id="firsatlar"></div></section>
+  <section class="liste" aria-labelledby="eBaslik"><h2 id="eBaslik">👥 Ekip</h2><div class="liste" id="ekip"></div></section>
+  <section class="liste isler" aria-labelledby="iBaslik"><h2 id="iBaslik">📋 Telefondan verilen işler</h2><div class="liste" id="isler"></div></section>
+  <button class="hap ikincil kucuk" id="kilitle" style="align-self:center">Bu cihazda kilitle</button>
+</main>
+
+<div class="okuyucu" id="okuyucu" hidden role="dialog" aria-modal="true" aria-labelledby="okBaslik">
+  <header><b id="okBaslik">Rapor</b><button class="hap ikincil" id="okKapat">Kapat</button></header>
+  <article id="okIcerik"></article>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const durumAd = {hazir:"Hazır", calisiyor:"Çalışıyor", tamam:"Rapor teslim", beklemede:"Beklemede"};
+  const isDurumAd = {calisiyor:"⏳ Çalışıyor", bitti:"✅ Bitti", hata:"⚠️ Hata", sirada:"🕒 Sırada"};
+  const DEPOLAMA = "ofis-cep-anahtar";
+  let veri = null, depo = "", anahtar = null;
+
+  /* ---------- şifre çözme (PBKDF2-SHA256 -> AES-256-CBC + HMAC-SHA256) ---------- */
+  const b64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const b64Yaz = b => btoa(String.fromCharCode(...b));
+  async function turet(sifre, tuz, tekrar){
+    const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(sifre), "PBKDF2", false, ["deriveBits"]);
+    return new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt:tuz, iterations:tekrar}, k, 512));
+  }
+  async function coz(paket, bitler){
+    const tuz = b64(paket.salt), iv = b64(paket.iv), ct = b64(paket.ct);
+    const imzali = new Uint8Array(tuz.length + iv.length + ct.length);
+    imzali.set(tuz); imzali.set(iv, tuz.length); imzali.set(ct, tuz.length + iv.length);
+    const hk = await crypto.subtle.importKey("raw", bitler.slice(32), {name:"HMAC", hash:"SHA-256"}, false, ["verify"]);
+    if (!await crypto.subtle.verify("HMAC", hk, b64(paket.mac), imzali)) throw new Error("sifre");
+    const ak = await crypto.subtle.importKey("raw", bitler.slice(0, 32), {name:"AES-CBC"}, false, ["decrypt"]);
+    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:"AES-CBC", iv}, ak, ct)));
+  }
+  async function paketGetir(){
+    const r = await fetch("veri.json?t=" + Date.now(), {cache:"no-store"});
+    if (!r.ok) throw new Error("ag");
+    return r.json();
+  }
+  function kayitliAnahtar(){ try { return JSON.parse(localStorage.getItem(DEPOLAMA) || "null"); } catch (e) { return null; } }
+
+  async function yukle(sessiz){
+    try {
+      const paket = await paketGetir();
+      const k = anahtar || kayitliAnahtar();
+      if (!k || k.salt !== paket.salt) { kilitGoster(sessiz ? "" : ""); return; }
+      anahtar = k;
+      ciz(await coz(paket, b64(k.bitler)));
+      $("#kilit").hidden = true; $("#uygulama").hidden = false;
+    } catch (e) {
+      if (e.message === "ag") { $("#taze").textContent = "Bağlantı yok; son açılan veri gösteriliyor."; if (!veri) kilitGoster("İnternet bağlantısı gerekli."); }
+      else { try { localStorage.removeItem(DEPOLAMA); } catch (x) {} anahtar = null; kilitGoster("Şifre değişmiş olabilir; yeniden girin."); }
+    }
+  }
+  function kilitGoster(mesaj){ $("#uygulama").hidden = true; $("#kilit").hidden = false; $("#kilitHata").textContent = mesaj || ""; }
+
+  $("#kilitForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const b = $("#ac"); b.disabled = true; $("#kilitHata").textContent = "Açılıyor…";
+    try {
+      const paket = await paketGetir();
+      const bitler = await turet($("#sifre").value, b64(paket.salt), paket.iter);
+      const d = await coz(paket, bitler);
+      anahtar = {salt: paket.salt, bitler: b64Yaz(bitler)};
+      if ($("#hatirla").checked) { try { localStorage.setItem(DEPOLAMA, JSON.stringify(anahtar)); } catch (x) {} }
+      $("#sifre").value = ""; $("#kilitHata").textContent = "";
+      ciz(d); $("#kilit").hidden = true; $("#uygulama").hidden = false;
+    } catch (err) {
+      $("#kilitHata").textContent = err.message === "ag" ? "Veri indirilemedi; bağlantıyı kontrol edin." : "Şifre yanlış.";
+    }
+    b.disabled = false;
+  });
+  $("#kilitle").addEventListener("click", () => { try { localStorage.removeItem(DEPOLAMA); } catch (e) {} anahtar = null; veri = null; kilitGoster(""); });
+  $("#yenile").addEventListener("click", () => yukle(true));
+  $("#gmDevam").addEventListener("click", () => { const oz = $("#gmOzet"), acik = oz.classList.toggle("kisa"); $("#gmDevam").textContent = acik ? "Devamı" : "Daha az"; });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && anahtar) yukle(true); });
+
+  /* ---------- görünüm ---------- */
+  function isLinki(baslik){ return depo ? depo + "/issues/new?title=" + encodeURIComponent(baslik) : "#"; }
+  function tarihYaz(iso){ if (!iso) return ""; const d = new Date(iso); if (isNaN(d)) return iso; return d.toLocaleString("tr-TR", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}); }
+  function mdHtml(md){
+    if (window.marked && window.DOMPurify) { const k = document.createElement("div"); k.innerHTML = DOMPurify.sanitize(marked.parse(md || "")); k.querySelectorAll("a").forEach(a => { a.target = "_blank"; a.rel = "noopener noreferrer"; }); return k.innerHTML; }
+    return "<pre style='white-space:pre-wrap'>" + esc(md) + "</pre>";
+  }
+  const metin = $("#isMetni"), gonder = $("#isGonder");
+  function gonderGuncelle(){
+    const m = metin.value.trim(), s = m.split("\n");
+    gonder.href = m && depo ? depo + "/issues/new?title=" + encodeURIComponent(s[0].slice(0, 200)) + (s.length > 1 ? "&body=" + encodeURIComponent(s.slice(1).join("\n")) : "") : "#";
+    gonder.setAttribute("aria-disabled", m && depo ? "false" : "true");
+  }
+  metin.addEventListener("input", gonderGuncelle);
+  gonder.addEventListener("click", () => setTimeout(() => { metin.value = ""; gonderGuncelle(); }, 400));
+
+  function ciz(p){
+    veri = p; const v = p.durum || {}; depo = v.depo || "";
+    $("#depoLink").href = depo || "#"; gonderGuncelle();
+    $("#taze").textContent = "Son değişiklik: " + tarihYaz(v.esitleme);
+    // "--- Önceki" ile başlayan eski notlar ayrı paragraf olarak görünsün; ilk 5 satır gösterilir
+    const oz = $("#gmOzet");
+    oz.textContent = ((v.gm && v.gm.sonOzet) || "Henüz özet yok.").replace(/\s*---\s*/g, "\n\n");
+    oz.classList.add("kisa");
+    requestAnimationFrame(() => { $("#gmDevam").hidden = oz.scrollHeight <= oz.clientHeight + 2; $("#gmDevam").textContent = "Devamı"; });
+    const f = v.firsatlar || [];
+    $("#firsatlar").innerHTML = f.length ? f.map(x => `<div class="firsat"><span class="rozet">${esc(tarihYaz(x.tarih) || x.tarih)}</span><span class="kim">${esc(x.kimden)}</span><span class="metin">${esc(x.metin)}${x.link ? ` <a href="${esc(x.link)}" target="_blank" rel="noopener">aç</a>` : ""}</span></div>`).join("") : `<div class="bos">Şu an fırsat yok.</div>`;
+    const c = v.calisanlar || [];
+    $("#ekip").innerHTML = c.length ? c.map(k => `
+      <details class="kart"><summary>
+        <span class="avatar" style="background:color-mix(in srgb, ${esc(k.renk || "#e8187f")} 22%, transparent)">${esc(k.ikon || "🙂")}</span>
+        <span style="min-width:0"><span class="ad">${esc(k.kod)} · ${esc(k.isim)}</span>${k.departman ? ` <span class="unvan">· ${esc(k.departman)}</span>` : ""}<br><span class="unvan">${esc(k.unvan)}</span></span>
+        <span class="durum d-${esc(k.durum)}">${esc(durumAd[k.durum] || k.durum)}</span></summary>
+        <div class="icerik">
+          <div><h3>Şu an</h3><p>${esc(k.suankiIs)}</p></div>
+          ${k.sonRapor ? `<div><h3>Son rapor · ${esc(k.sonRapor.tarih)}</h3><p>${esc(k.sonRapor.ozet)}</p></div>` : `<p class="not">Henüz rapor yok.</p>`}
+          <div class="dugmeler">${k.sonRapor ? `<button class="hap ana" data-oku="${esc(k.kod)}">📄 Raporu oku</button>` : ""}${(k.komutlar || []).map(m => `<a class="hap ikincil" href="${esc(isLinki(m.metin))}" target="_blank" rel="noopener">${esc(m.etiket)}</a>`).join("")}</div>
+          <p class="not">${esc(k.gorev)} · ${esc(k.siklik)}</p>
+        </div></details>`).join("") : `<div class="bos">Ekip bilgisi yok.</div>`;
+    document.querySelectorAll("[data-oku]").forEach(b => b.addEventListener("click", () => raporAc(b.dataset.oku)));
+    const i = v.isler || [];
+    $("#isler").innerHTML = i.length ? i.map(x => `<a class="satir" href="${esc(depo + "/issues/" + x.no)}" target="_blank" rel="noopener"><span class="no">#${esc(x.no)}</span><span class="baslik">${esc(x.baslik)}</span><span class="durum d-${x.durum === "bitti" ? "tamam" : x.durum === "calisiyor" ? "calisiyor" : "beklemede"}">${esc(isDurumAd[x.durum] || x.durum)}</span></a>`).join("") : `<div class="bos">Henüz telefondan iş verilmedi.</div>`;
+  }
+  const ok = $("#okuyucu");
+  function raporAc(kod){
+    const k = ((veri.durum || {}).calisanlar || []).find(x => x.kod === kod) || {};
+    const r = (veri.raporlar || {})[kod];
+    $("#okBaslik").textContent = `${k.isim || ""} · ${k.sonRapor ? k.sonRapor.tarih : ""}`;
+    $("#okIcerik").innerHTML = r && r.icerik ? mdHtml(r.icerik) : "<p>Rapor metni bulunamadı.</p>";
+    ok.hidden = false; $("#okIcerik").scrollTop = 0; $("#okKapat").focus();
+  }
+  $("#okKapat").addEventListener("click", () => { ok.hidden = true; });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") ok.hidden = true; });
+
+  yukle(false);
+})();
+</script>
+</body>
+</html>
