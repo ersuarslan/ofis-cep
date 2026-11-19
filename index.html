@@ -46,8 +46,8 @@ h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
 .gm{background:linear-gradient(135deg, color-mix(in srgb, var(--mor) 14%, var(--yuzey)), color-mix(in srgb, var(--pembe) 12%, var(--yuzey)));border:0}
 .gm::after{content:"";position:absolute;right:-40px;top:-40px;width:140px;height:120px;border-radius:58% 42% 61% 39% / 47% 55% 45% 53%;background:color-mix(in srgb, var(--lime) 30%, transparent)}
 .gm .etiket{font-family:var(--display);font-weight:700;font-size:13px;color:var(--mor);text-transform:uppercase;letter-spacing:.06em;position:relative;z-index:1}
-.gm p{margin:6px 0 0;position:relative;z-index:1;white-space:pre-line}
-.gm p.kisa{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.gm #gmOzet{margin:6px 0 0;position:relative;z-index:1;line-height:1.5}
+.gm #gmOzet.kisa{max-height:7.5em;overflow:hidden}
 .gm .devam{position:relative;z-index:1;margin-top:8px;background:none;border:0;padding:0;color:var(--mor);font:700 13px var(--display);cursor:pointer}
 .is-ver{display:flex;flex-direction:column;gap:10px}
 textarea,input[type=password]{width:100%;font:inherit;color:inherit;background:var(--yuzey2);border:1px solid var(--cizgi);border-radius:18px;padding:12px 14px}
@@ -129,7 +129,7 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
 
   <section class="blob gm" aria-label="Genel Müdür özeti">
     <div class="etiket">👔 Genel Müdür</div>
-    <p id="gmOzet" class="kisa"></p>
+    <div id="gmOzet" class="kisa"></div>
     <button class="devam" id="gmDevam" hidden>Devamı</button>
   </section>
 
@@ -255,7 +255,13 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
     $("#taze").title = "Yeni iş, rapor ya da fırsat olduğunda bilgisayardaki köprü veriyi bir dakika içinde yeniler.";
     // "--- Önceki" ile başlayan eski notlar ayrı paragraf olarak görünsün; ilk 5 satır gösterilir
     const oz = $("#gmOzet");
-    oz.textContent = ((v.gm && v.gm.sonOzet) || "Henüz özet yok.").replace(/\s*---\s*/g, "\n\n");
+    const parcalar = String((v.gm && v.gm.sonOzet) || "Henüz özet yok.").split(/\s*---\s*/).filter(Boolean).map((p, i) => {
+      p = p.trim().replace(/^Önceki\s*/i, "");
+      const m = p.match(/^(\d{4}-\d{2}-\d{2})?\s*\(([^)]{1,60})\)\s*:\s*/);
+      const govde = esc(m ? p.slice(m[0].length) : p).replace(/https?:\/\/localhost[^\s<]*/g, "(bilgisayarda)").replace(/⚠️/g, "<br>⚠️");
+      return `<div style="margin:0 0 10px${i ? ";opacity:.75" : ""}">${m ? `<b>${esc(m[2])}</b><br>` : ""}${govde}</div>`;
+    });
+    oz.innerHTML = parcalar[0] + (parcalar.length > 1 ? `<div style="margin:12px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;opacity:.6">Önceki işler</div>` + parcalar.slice(1).join("") : "");
     oz.classList.add("kisa");
     requestAnimationFrame(() => { $("#gmDevam").hidden = oz.scrollHeight <= oz.clientHeight + 2; $("#gmDevam").textContent = "Devamı"; });
     const f = v.firsatlar || [];
