@@ -277,6 +277,7 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
     requestAnimationFrame(() => { $("#gmDevam").hidden = oz.scrollHeight <= oz.clientHeight + 2; $("#gmDevam").textContent = "Devamı"; });
     const f = v.firsatlar || [];
     $("#firsatlar").innerHTML = f.length ? f.map(x => `<div class="firsat"><span class="rozet">${esc(tarihYaz(x.tarih) || x.tarih)}</span><span class="kim">${esc(x.kimden)}</span><span class="metin">${esc(x.metin)}${x.link ? ` <a href="${esc(x.link)}" target="_blank" rel="noopener">aç</a>` : ""}</span></div>`).join("") : `<div class="bos">Şu an fırsat yok.</div>`;
+    havuzCiz(v);
     const c = v.calisanlar || [];
     $("#ekip").innerHTML = c.length ? c.map(k => `
       <details class="kart"><summary>
@@ -292,6 +293,45 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
     document.querySelectorAll("[data-oku]").forEach(b => b.addEventListener("click", () => raporAc(b.dataset.oku)));
     const i = v.isler || [];
     $("#isler").innerHTML = i.length ? i.map(x => `<a class="satir" href="${esc(depo + "/issues/" + x.no)}" target="_blank" rel="noopener"><span class="no">#${esc(x.no)}</span><span class="baslik">${esc(x.baslik)}</span><span class="durum d-${x.durum === "bitti" ? "tamam" : x.durum === "calisiyor" ? "calisiyor" : "beklemede"}">${esc(isDurumAd[x.durum] || x.durum)}</span></a>`).join("") : `<div class="bos">Henüz telefondan iş verilmedi.</div>`;
+  }
+  /* 💡 Aylık fırsat havuzu: GENELMÜDÜR/firsatlar/YYYY-AA.md tablosu */
+  const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+  function havuzOku(md){
+    const satirlar = [];
+    String(md || "").split(/\r?\n/).forEach(l => { if (!/^\|\s*\d{4}-\d{2}-\d{2}/.test(l)) return;
+      const h = l.trim().replace(/^\||\|$/g, "").split("|").map(x => x.trim());
+      satirlar.push({tarih:h[0]||"", kim:h[1]||"", tur:h[2]||"", firsat:h[3]||"", neden:h[4]||"", kaynak:h[5]||"", durum:h[6]||"Yeni"}); });
+    const i = String(md || "").indexOf("## Genel Müdür analizi");
+    return {satirlar, analiz: i >= 0 ? String(md).slice(i + 22).trim() : ""};
+  }
+  const satirIci = s => (window.marked && window.DOMPurify) ? DOMPurify.sanitize(marked.parseInline(s || "")).replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ') : esc(s);
+  let havuzVeri = null, havuzSuz = null;
+  function kimRenk(kim){ const k = (((veri || {}).durum || {}).calisanlar || []).find(x => (kim || "").startsWith(x.kod)); return (k && k.renk) || "var(--pembe)"; }
+  const fkHtml = s => `<div class="fk" style="--renk:${esc(kimRenk(s.kim))}"><div class="fust"><span class="cip">${esc(s.tur)}</span><b>${esc(s.kim)}</b><span>${esc(s.tarih)}</span><span class="drm">${esc(s.durum)}</span></div>
+      <h4>${satirIci(s.firsat)}</h4><p>${satirIci(s.neden)}</p>${s.kaynak ? `<p class="not">🔗 ${satirIci(s.kaynak)}</p>` : ""}</div>`;
+  function havuzCiz(v){
+    const el = $("#havuz");
+    if (!v.havuz) { el.innerHTML = `<div class="bos">Bu ay henüz fırsat önerisi yok.</div>`; havuzVeri = null; return; }
+    havuzVeri = havuzOku(v.havuz.icerik); havuzVeri.ay = v.havuz.ay;
+    const m = String(v.havuz.ay).match(/(\d{4})-(\d{2})/); havuzVeri.ad = m ? `${AYLAR[+m[2]-1]} ${m[1]}` : v.havuz.ay;
+    $("#hBaslik").textContent = `💡 ${havuzVeri.ad} fırsatları`;
+    const s = havuzVeri.satirlar, kisi = new Map(); s.forEach(x => kisi.set(x.kim, (kisi.get(x.kim) || 0) + 1));
+    el.innerHTML = !s.length ? `<div class="bos">Bu ay henüz fırsat önerisi yok.</div>` :
+      `<div class="cipler">${[...kisi].sort((a,b) => b[1]-a[1]).map(([k,n]) => `<span class="cip">${esc(k)} · ${n}</span>`).join("")}</div>`
+      + s.slice(-3).reverse().map(fkHtml).join("")
+      + `<div class="dugmeler"><button class="hap ana" id="havuzAc">💡 Tümü (${s.length}) ve analiz</button><a class="hap ikincil" href="${esc(isLinki("Aylık fırsatları analiz et: GENELMÜDÜR/firsatlar/" + havuzVeri.ay + ".md"))}" target="_blank" rel="noopener">🔍 Analiz iste</a></div>`;
+    const b = $("#havuzAc"); if (b) b.addEventListener("click", () => { havuzSuz = null; havuzAc(); });
+  }
+  function havuzAc(){
+    const h = havuzVeri; if (!h) return;
+    const kisi = [...new Set(h.satirlar.map(x => x.kim))];
+    const gorunen = h.satirlar.filter(x => !havuzSuz || x.kim === havuzSuz || x.tur === havuzSuz).slice().reverse();
+    $("#okBaslik").textContent = `💡 ${h.ad} · ${h.satirlar.length} fırsat`;
+    $("#okIcerik").innerHTML = `<div class="cipler" style="margin-bottom:12px">${kisi.concat([...new Set(h.satirlar.map(x => x.tur))]).map(k => `<button class="cip ${havuzSuz === k ? "on" : ""}" data-suz="${esc(k)}">${esc(k)}</button>`).join("")}</div>
+      <div class="liste">${gorunen.map(fkHtml).join("") || `<div class="bos">Bu filtrede fırsat yok.</div>`}</div>
+      <h2>👔 Genel Müdür analizi</h2>${h.analiz ? mdHtml(h.analiz) : "<p>Henüz analiz yok.</p>"}`;
+    document.querySelectorAll("[data-suz]").forEach(b => b.addEventListener("click", () => { havuzSuz = havuzSuz === b.dataset.suz ? null : b.dataset.suz; havuzAc(); }));
+    ok.hidden = false;
   }
   const ok = $("#okuyucu");
   function raporAc(kod){
