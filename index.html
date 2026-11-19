@@ -240,7 +240,8 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
   function ciz(p){
     veri = p; const v = p.durum || {}; depo = v.depo || "";
     $("#depoLink").href = depo || "#"; gonderGuncelle();
-    $("#taze").textContent = "Son değişiklik: " + tarihYaz(v.esitleme);
+    $("#taze").textContent = "Ofiste son hareket: " + tarihYaz(v.esitleme);
+    $("#taze").title = "Yeni iş, rapor ya da fırsat olduğunda bilgisayardaki köprü veriyi bir dakika içinde yeniler.";
     // "--- Önceki" ile başlayan eski notlar ayrı paragraf olarak görünsün; ilk 5 satır gösterilir
     const oz = $("#gmOzet");
     oz.textContent = ((v.gm && v.gm.sonOzet) || "Henüz özet yok.").replace(/\s*---\s*/g, "\n\n");
