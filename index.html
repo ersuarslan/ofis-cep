@@ -58,6 +58,9 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
 .hap.ana[aria-disabled="true"]{opacity:.45;pointer-events:none}
 .hap.ikincil{background:var(--yuzey2);color:var(--ink);border:1px solid var(--cizgi)}
 .hap.kucuk{padding:6px 12px;font-size:13px}
+.hap.yenile{min-height:44px;min-width:110px;padding:10px 18px;font-size:15px;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.hap.yenile:active{transform:scale(.96)}
+.hap.yenile[disabled]{opacity:.7}
 .not{font-size:12px;color:var(--soluk);margin:0}
 .liste{display:flex;flex-direction:column;gap:10px}
 .firsat{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:start;background:var(--yuzey);border:1px solid var(--cizgi);border-radius:20px;padding:12px 14px}
@@ -121,7 +124,7 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
 <main class="sayfa" id="uygulama" hidden>
   <div class="ust">
     <h1>Claude Ofis</h1>
-    <div class="sag"><span class="taze" id="taze"></span><button class="hap ikincil kucuk" id="yenile">Yenile</button></div>
+    <div class="sag"><span class="taze" id="taze"></span><button type="button" class="hap ikincil yenile" id="yenile">↻ Yenile</button></div>
   </div>
 
   <section class="blob gm" aria-label="Genel Müdür özeti">
@@ -217,7 +220,15 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
     b.disabled = false;
   });
   $("#kilitle").addEventListener("click", () => { try { localStorage.removeItem(DEPOLAMA); } catch (e) {} anahtar = null; veri = null; kilitGoster(""); });
-  $("#yenile").addEventListener("click", () => yukle(true));
+  // Yenile: basınca görünür geri bildirim (yeni bir şey yoksa da "Güncel" der)
+  $("#yenile").addEventListener("click", async () => {
+    const b = $("#yenile"); if (b.disabled) return;
+    b.disabled = true; b.textContent = "Yenileniyor…";
+    const once = JSON.stringify(veri || null);
+    await yukle(true);
+    b.textContent = JSON.stringify(veri || null) !== once ? "✓ Yenilendi" : "✓ Güncel";
+    setTimeout(() => { b.textContent = "↻ Yenile"; b.disabled = false; }, 1800);
+  });
   $("#gmDevam").addEventListener("click", () => { const oz = $("#gmOzet"), acik = oz.classList.toggle("kisa"); $("#gmDevam").textContent = acik ? "Devamı" : "Daha az"; });
   document.addEventListener("visibilitychange", () => { if (!document.hidden && anahtar) yukle(true); });
 
