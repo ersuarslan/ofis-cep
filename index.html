@@ -256,7 +256,7 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
     // "--- Önceki" ile başlayan eski notlar ayrı paragraf olarak görünsün; ilk 5 satır gösterilir
     const oz = $("#gmOzet");
     const parcalar = String((v.gm && v.gm.sonOzet) || "Henüz özet yok.").split(/\s*---\s*/).filter(Boolean).map((p, i) => {
-      p = p.trim().replace(/^Önceki\s*/i, "");
+      p = p.trim().replace(/^Önceki\s*/i, "").replace(/^:\s*/, "");
       const m = p.match(/^(\d{4}-\d{2}-\d{2})?\s*\(([^)]{1,60})\)\s*:\s*/);
       const govde = esc(m ? p.slice(m[0].length) : p).replace(/https?:\/\/localhost[^\s<]*/g, "(bilgisayarda)").replace(/⚠️/g, "<br>⚠️");
       return `<div style="margin:0 0 10px${i ? ";opacity:.75" : ""}">${m ? `<b>${esc(m[2])}</b><br>` : ""}${govde}</div>`;
