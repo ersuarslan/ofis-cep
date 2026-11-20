@@ -114,7 +114,17 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
 .okuyucu article table{border-collapse:collapse;font-size:13px;display:block;overflow-x:auto;max-width:100%}
 .okuyucu article th,.okuyucu article td{border:1px solid var(--cizgi);padding:6px 8px;text-align:left;vertical-align:top}
 .okuyucu article th{background:var(--yuzey2)}
-.okuyucu article figure{margin:14px 0}.okuyucu article code{background:var(--yuzey2);padding:1px 5px;border-radius:6px}
+.okuyucu article figure{margin:14px 0}
+.pdf-alan{margin:28px 0 8px;padding-top:14px;border-top:1px solid var(--cizgi);display:flex;flex-direction:column;gap:6px}
+@media print{@page{size:A4;margin:14mm}
+  body.pdf-yazdir > *:not(.okuyucu){display:none !important}
+  body.pdf-yazdir{background:#fff !important;color:#111 !important;padding:0 !important}
+  body.pdf-yazdir .okuyucu{position:static !important;background:#fff !important;display:block !important}
+  body.pdf-yazdir .okuyucu header, body.pdf-yazdir .pdf-alan{display:none !important}
+  body.pdf-yazdir .okuyucu article{overflow:visible !important;max-width:none !important;padding:0 !important;color:#111 !important;font-size:11pt}
+  body.pdf-yazdir .okuyucu article a{color:#111}
+  body.pdf-yazdir .okuyucu article img{max-width:100% !important;break-inside:avoid}
+  body.pdf-yazdir .okuyucu article table{display:table !important;font-size:9pt}}.okuyucu article code{background:var(--yuzey2);padding:1px 5px;border-radius:6px}
 @media (prefers-reduced-motion: no-preference){.kart[open] .icerik{animation:ac .18s ease-out}@keyframes ac{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}}
 </style>
 </head>
@@ -335,7 +345,8 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
     $("#okBaslik").textContent = `💡 ${h.ad} · ${h.satirlar.length} fırsat`;
     $("#okIcerik").innerHTML = `<div class="cipler" style="margin-bottom:12px">${kisi.concat([...new Set(h.satirlar.map(x => x.tur))]).map(k => `<button class="cip ${havuzSuz === k ? "on" : ""}" data-suz="${esc(k)}">${esc(k)}</button>`).join("")}</div>
       <div class="liste">${gorunen.map(fkHtml).join("") || `<div class="bos">Bu filtrede fırsat yok.</div>`}</div>
-      <h2>👔 Genel Müdür analizi</h2>${h.analiz ? mdHtml(h.analiz) : "<p>Henüz analiz yok.</p>"}`;
+      <h2>👔 Genel Müdür analizi</h2>${h.analiz ? mdHtml(h.analiz) : "<p>Henüz analiz yok.</p>"}${pdfAlani()}`;
+    pdfBagla(`firsatlar-${h.ay}`);
     document.querySelectorAll("[data-suz]").forEach(b => b.addEventListener("click", () => { havuzSuz = havuzSuz === b.dataset.suz ? null : b.dataset.suz; havuzAc(); }));
     ok.hidden = false;
   }
@@ -351,13 +362,26 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
       } catch (e) { fg.textContent = "🖼 Görsel henüz telefona ulaşmadı; birkaç dakika sonra Yenile."; fg.className = "not"; }
     }
   }
+  // PDF: açık raporu yazdır → "PDF olarak kaydet" (iPhone: Yazdır → paylaş → Dosyalar'a kaydet)
+  const pdfAlani = () => `<div class="pdf-alan"><button type="button" class="hap ana" id="pdfDugme">📄 PDF olarak indir</button><p class="not">Açılan pencerede "PDF olarak kaydet"i seçin. iPhone'da: Yazdır → sağ üstteki paylaş simgesi → Dosyalar'a Kaydet.</p></div>`;
+  function pdfBagla(ad){
+    const b = $("#pdfDugme"); if (!b) return;
+    b.addEventListener("click", () => {
+      const eski = document.title; document.title = String(ad || "rapor").replace(/[\\/:*?"<>|\s]+/g, "-");
+      document.body.classList.add("pdf-yazdir");
+      const bitir = () => { document.body.classList.remove("pdf-yazdir"); document.title = eski; window.removeEventListener("afterprint", bitir); };
+      window.addEventListener("afterprint", bitir);
+      setTimeout(() => { window.print(); setTimeout(bitir, 2000); }, 50);
+    });
+  }
   const ok = $("#okuyucu");
   function raporAc(kod){
     const k = ((veri.durum || {}).calisanlar || []).find(x => x.kod === kod) || {};
     const r = (veri.raporlar || {})[kod];
     $("#okBaslik").textContent = `${k.isim || ""} · ${k.sonRapor ? k.sonRapor.tarih : ""}`;
     const dz = r && r.dosya ? String(r.dosya).split("/").slice(0, -1).join("/") : "";
-    $("#okIcerik").innerHTML = r && r.icerik ? mdHtml(r.icerik, dz) : "<p>Rapor metni bulunamadı.</p>";
+    $("#okIcerik").innerHTML = r && r.icerik ? mdHtml(r.icerik, dz) + pdfAlani() : "<p>Rapor metni bulunamadı.</p>";
+    pdfBagla(`${k.kod || kod}-${k.isim || ""}-${k.sonRapor ? k.sonRapor.tarih : ""}`);
     gorselleriYukle($("#okIcerik"));
     ok.hidden = false; $("#okIcerik").scrollTop = 0; $("#okKapat").focus();
   }
