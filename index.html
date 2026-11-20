@@ -116,15 +116,18 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
 .okuyucu article th{background:var(--yuzey2)}
 .okuyucu article figure{margin:14px 0}
 .pdf-alan{margin:28px 0 8px;padding-top:14px;border-top:1px solid var(--cizgi);display:flex;flex-direction:column;gap:6px}
-@media print{@page{size:A4;margin:14mm}
+@media print{@page{size:A4;margin:12mm 0}
+  html, body.pdf-yazdir, body.pdf-yazdir *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
   body.pdf-yazdir > *:not(.okuyucu){display:none !important}
-  body.pdf-yazdir{background:#fff !important;color:#111 !important;padding:0 !important}
-  body.pdf-yazdir .okuyucu{position:static !important;background:#fff !important;display:block !important}
-  body.pdf-yazdir .okuyucu header, body.pdf-yazdir .pdf-alan{display:none !important}
-  body.pdf-yazdir .okuyucu article{overflow:visible !important;max-width:none !important;padding:0 !important;color:#111 !important;font-size:11pt}
-  body.pdf-yazdir .okuyucu article a{color:#111}
-  body.pdf-yazdir .okuyucu article img{max-width:100% !important;break-inside:avoid}
-  body.pdf-yazdir .okuyucu article table{display:table !important;font-size:9pt}}.okuyucu article code{background:var(--yuzey2);padding:1px 5px;border-radius:6px}
+  body.pdf-yazdir{background:var(--bg) !important;padding:0 !important}
+  body.pdf-yazdir .okuyucu{position:static !important;background:var(--bg) !important;display:block !important}
+  body.pdf-yazdir .okuyucu header{background:linear-gradient(135deg,var(--pembe),var(--mor)) !important;color:#fff !important;border:0 !important;padding:7mm 16mm 6mm !important}
+  body.pdf-yazdir .okuyucu header b{color:#fff !important;font-size:20px}
+  body.pdf-yazdir .okuyucu header button, body.pdf-yazdir .pdf-alan{display:none !important}
+  body.pdf-yazdir .okuyucu article{overflow:visible !important;max-width:none !important;padding:8mm 16mm 0 !important;font-size:11pt}
+  body.pdf-yazdir .okuyucu article img{max-width:100% !important;border-radius:14px;break-inside:avoid}
+  body.pdf-yazdir .okuyucu article table{display:table !important;font-size:9pt}
+  body.pdf-yazdir .okuyucu article tr{break-inside:avoid}}.okuyucu article code{background:var(--yuzey2);padding:1px 5px;border-radius:6px}
 @media (prefers-reduced-motion: no-preference){.kart[open] .icerik{animation:ac .18s ease-out}@keyframes ac{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}}
 </style>
 </head>
