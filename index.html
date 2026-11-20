@@ -114,7 +114,7 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
 .okuyucu article table{border-collapse:collapse;font-size:13px;display:block;overflow-x:auto;max-width:100%}
 .okuyucu article th,.okuyucu article td{border:1px solid var(--cizgi);padding:6px 8px;text-align:left;vertical-align:top}
 .okuyucu article th{background:var(--yuzey2)}
-.okuyucu article code{background:var(--yuzey2);padding:1px 5px;border-radius:6px}
+.okuyucu article figure{margin:14px 0}.okuyucu article code{background:var(--yuzey2);padding:1px 5px;border-radius:6px}
 @media (prefers-reduced-motion: no-preference){.kart[open] .icerik{animation:ac .18s ease-out}@keyframes ac{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}}
 </style>
 </head>
@@ -246,10 +246,13 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
   /* ---------- görünüm ---------- */
   function isLinki(baslik){ return depo ? depo + "/issues/new?title=" + encodeURIComponent(baslik) : "#"; }
   function tarihYaz(iso){ if (!iso) return ""; const d = new Date(iso); if (isNaN(d)) return iso; return d.toLocaleString("tr-TR", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}); }
-  function mdHtml(md){
+  function mdHtml(md, dizin){
     if (window.marked && window.DOMPurify) { const k = document.createElement("div"); k.innerHTML = DOMPurify.sanitize(marked.parse(md || "")); k.querySelectorAll("a").forEach(a => { a.target = "_blank"; a.rel = "noopener noreferrer"; });
-      // ARYA konsept görselleri telefona şifreli veriyle taşınmaz: yerine not
-      k.querySelectorAll("img").forEach(img => { const s = img.getAttribute("src") || ""; if (/^(https?:|data:)/i.test(s)) return; const e = document.createElement("p"); e.className = "not"; e.textContent = `🖼 ${img.getAttribute("alt") || s}: görsel bilgisayardaki panelde ve GitHub'daki ARYA arşivinde (reports/arya).`; img.replaceWith(e); });
+      // ARYA konsept görselleri: şifreli küçük kopyası varsa sonra indirilip çözülür (gorselleriYukle), yoksa not
+      k.querySelectorAll("img").forEach(img => { const s = img.getAttribute("src") || ""; if (/^(https?:|data:)/i.test(s)) return;
+        const rel = dizin ? (dizin + "/" + s.replace(/^\.\//, "")) : "", ad = ((veri && veri.durum && veri.durum.aryaGorseller) || {})[rel];
+        if (ad) { const fg = document.createElement("figure"); fg.className = "sifreli-gorsel"; fg.dataset.dosya = ad; fg.dataset.alt = img.getAttribute("alt") || s; fg.textContent = "🖼 Görsel yükleniyor…"; img.replaceWith(fg); return; }
+        const e = document.createElement("p"); e.className = "not"; e.textContent = `🖼 ${img.getAttribute("alt") || s}: bu görsel telefona henüz gönderilmedi (bilgisayardaki panelde görünür).`; img.replaceWith(e); });
       return k.innerHTML; }
     return "<pre style='white-space:pre-wrap'>" + esc(md) + "</pre>";
   }
@@ -336,12 +339,26 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
     document.querySelectorAll("[data-suz]").forEach(b => b.addEventListener("click", () => { havuzSuz = havuzSuz === b.dataset.suz ? null : b.dataset.suz; havuzAc(); }));
     ok.hidden = false;
   }
+  // şifreli görseli indir → telefon anahtarıyla çöz → göster
+  async function gorselleriYukle(kap){
+    for (const fg of kap.querySelectorAll("figure.sifreli-gorsel")) {
+      try {
+        const r = await fetch(fg.dataset.dosya, {cache:"force-cache"}); if (!r.ok) throw new Error("yok");
+        const g = await coz(await r.json(), b64(anahtar.bitler));
+        const img = document.createElement("img"); img.alt = fg.dataset.alt; img.src = "data:" + g.t + ";base64," + g.b;
+        img.style.cssText = "width:100%;border-radius:16px;display:block;background:var(--yuzey2)";
+        fg.textContent = ""; fg.appendChild(img);
+      } catch (e) { fg.textContent = "🖼 Görsel henüz telefona ulaşmadı; birkaç dakika sonra Yenile."; fg.className = "not"; }
+    }
+  }
   const ok = $("#okuyucu");
   function raporAc(kod){
     const k = ((veri.durum || {}).calisanlar || []).find(x => x.kod === kod) || {};
     const r = (veri.raporlar || {})[kod];
     $("#okBaslik").textContent = `${k.isim || ""} · ${k.sonRapor ? k.sonRapor.tarih : ""}`;
-    $("#okIcerik").innerHTML = r && r.icerik ? mdHtml(r.icerik) : "<p>Rapor metni bulunamadı.</p>";
+    const dz = r && r.dosya ? String(r.dosya).split("/").slice(0, -1).join("/") : "";
+    $("#okIcerik").innerHTML = r && r.icerik ? mdHtml(r.icerik, dz) : "<p>Rapor metni bulunamadı.</p>";
+    gorselleriYukle($("#okIcerik"));
     ok.hidden = false; $("#okIcerik").scrollTop = 0; $("#okKapat").focus();
   }
   $("#okKapat").addEventListener("click", () => { ok.hidden = true; });
