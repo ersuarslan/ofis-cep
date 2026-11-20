@@ -366,19 +366,61 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
       } catch (e) { fg.textContent = "🖼 Görsel henüz telefona ulaşmadı; birkaç dakika sonra Yenile."; fg.className = "not"; }
     }
   }
-  // PDF: açık raporu yazdır → "PDF olarak kaydet" (iPhone: Yazdır → paylaş → Dosyalar'a kaydet)
-  const pdfAlani = () => `<div class="pdf-alan"><button type="button" class="hap ana" id="pdfDugme">📄 PDF olarak indir</button><p class="not">Açılan pencerede "PDF olarak kaydet"i seçin. iPhone'da: Yazdır → sağ üstteki paylaş simgesi → Dosyalar'a Kaydet.</p></div>`;
+  // PDF (telefon): ana ekrana eklenmiş uygulamada iPhone yazdırma penceresi açmaz. Bu yüzden PDF doğrudan dosya olarak üretilir
+  // (html2pdf, renkli), sonra paylaş menüsünden "Dosyalar'a Kaydet" ile saklanır.
+  const pdfAlani = () => `<div class="pdf-alan"><button type="button" class="hap ana" id="pdfDugme">📄 PDF olarak indir</button><p class="not">Önce PDF hazırlanır; sonra düğmeye tekrar basıp paylaş menüsünden "Dosyalar'a Kaydet"i seç.</p></div>`;
+  let h2pYuk = null;
+  const h2pYukle = () => h2pYuk || (h2pYuk = new Promise((ok, hata) => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"; s.onload = ok; s.onerror = () => { h2pYuk = null; hata(new Error("PDF kütüphanesi indirilemedi")); }; document.head.appendChild(s); }));
+  function pdfKabugu(){
+    // açık raporun kopyası, açık renk kâğıt ve uygulamanın renkleriyle (ekranın arkasında, görünmeden)
+    const dis = document.createElement("div");   // görünmeyen dış kap; PDF kütüphanesine içteki düz akışlı öğe verilir
+    dis.style.cssText = "position:absolute;left:0;top:0;width:760px;z-index:-1;overflow:hidden;height:1px";
+    const kap = document.createElement("div"); kap.className = "okuyucu"; dis.appendChild(kap);
+    kap.style.cssText = "position:static;inset:auto;z-index:auto;display:block;width:760px;padding:0;background:#fff;color:#24142f;--bg:#fff;--yuzey:#fff;--yuzey2:#fdebf6;--ink:#24142f;--soluk:#7a6585;--cizgi:#f3d7ea;--pembe:#e8187f;--lime:#5f9e00;--turkuaz:#0a8fb8;--mor:#7b45e6";
+    const bas = document.createElement("div");
+    bas.style.cssText = "background:linear-gradient(135deg,#e8187f,#7b45e6);color:#fff;padding:20px 26px;font:700 21px Quicksand,system-ui,sans-serif";
+    bas.textContent = $("#okBaslik").textContent;
+    const ic = $("#okIcerik").cloneNode(true); ic.removeAttribute("id");
+    ic.style.cssText = "overflow:visible;max-width:none;width:auto;padding:18px 26px 10px;margin:0;color:#24142f";
+    ic.querySelectorAll(".pdf-alan").forEach(e => e.remove());
+    ic.querySelectorAll("table").forEach(t => { t.style.display = "table"; t.style.width = "100%"; });
+    ic.querySelectorAll("button.cip").forEach(e => e.style.pointerEvents = "none");
+    kap.append(bas, ic); document.body.appendChild(dis); return kap;
+  }
+  async function paylasVeyaKaydet(dosya){
+    if (navigator.canShare && navigator.canShare({files: [dosya]})) {
+      try { await navigator.share({files: [dosya], title: dosya.name}); return; } catch (e) { if (e.name === "AbortError") return; }
+    }
+    const url = URL.createObjectURL(dosya), a = document.createElement("a");
+    a.href = url; a.download = dosya.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
   function pdfBagla(ad){
     const b = $("#pdfDugme"); if (!b) return;
-    b.addEventListener("click", () => {
-      const eski = document.title; document.title = String(ad || "rapor").replace(/[\\/:*?"<>|\s]+/g, "-");
-      document.body.classList.add("pdf-yazdir");
-      const bitir = () => { document.body.classList.remove("pdf-yazdir"); document.title = eski; window.removeEventListener("afterprint", bitir); };
-      window.addEventListener("afterprint", bitir);
-      setTimeout(() => { window.print(); setTimeout(bitir, 2000); }, 50);
+    const dosyaAdi = String(ad || "rapor").replace(/[\\/:*?"<>|\s]+/g, "-").replace(/-+$/, "") + ".pdf";
+    let hazir = null;
+    b.addEventListener("click", async () => {
+      if (hazir) { await paylasVeyaKaydet(hazir); return; }
+      b.disabled = true; b.textContent = "PDF hazırlanıyor…";
+      let kap = null;
+      try {
+        await h2pYukle();
+        kap = pdfKabugu();
+        const yuk = Math.max(1, kap.scrollHeight), olcek = Math.max(0.8, Math.min(2, Math.sqrt(15e6 / (760 * yuk))));   // iPhone tuval sınırı
+        const blob = await html2pdf().set({
+          margin: [8, 0, 10, 0], filename: dosyaAdi,
+          image: {type: "jpeg", quality: 0.92},
+          html2canvas: {scale: olcek, useCORS: true, backgroundColor: "#ffffff", windowWidth: 760},
+          jsPDF: {unit: "mm", format: "a4", orientation: "portrait"},
+          pagebreak: {mode: ["css", "legacy"], avoid: ["img", "tr", ".fk", "figure", "h2", "h3"]}
+        }).from(kap).outputPdf("blob");
+        hazir = new File([blob], dosyaAdi, {type: "application/pdf"});
+        b.textContent = "📤 PDF hazır · kaydet / paylaş";
+      } catch (e) {
+        b.textContent = "📄 PDF olarak indir"; alert("PDF oluşturulamadı: " + (e.message || e));
+      } finally { if (kap && kap.parentNode) kap.parentNode.remove(); b.disabled = false; }
     });
-  }
-  const ok = $("#okuyucu");
+  }  const ok = $("#okuyucu");
   function raporAc(kod){
     const k = ((veri.durum || {}).calisanlar || []).find(x => x.kod === kod) || {};
     const r = (veri.raporlar || {})[kod];
