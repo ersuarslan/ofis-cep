@@ -247,7 +247,10 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
   function isLinki(baslik){ return depo ? depo + "/issues/new?title=" + encodeURIComponent(baslik) : "#"; }
   function tarihYaz(iso){ if (!iso) return ""; const d = new Date(iso); if (isNaN(d)) return iso; return d.toLocaleString("tr-TR", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}); }
   function mdHtml(md){
-    if (window.marked && window.DOMPurify) { const k = document.createElement("div"); k.innerHTML = DOMPurify.sanitize(marked.parse(md || "")); k.querySelectorAll("a").forEach(a => { a.target = "_blank"; a.rel = "noopener noreferrer"; }); return k.innerHTML; }
+    if (window.marked && window.DOMPurify) { const k = document.createElement("div"); k.innerHTML = DOMPurify.sanitize(marked.parse(md || "")); k.querySelectorAll("a").forEach(a => { a.target = "_blank"; a.rel = "noopener noreferrer"; });
+      // ARYA konsept görselleri telefona şifreli veriyle taşınmaz: yerine not
+      k.querySelectorAll("img").forEach(img => { const s = img.getAttribute("src") || ""; if (/^(https?:|data:)/i.test(s)) return; const e = document.createElement("p"); e.className = "not"; e.textContent = `🖼 ${img.getAttribute("alt") || s}: görsel bilgisayardaki panelde ve GitHub'daki ARYA arşivinde (reports/arya).`; img.replaceWith(e); });
+      return k.innerHTML; }
     return "<pre style='white-space:pre-wrap'>" + esc(md) + "</pre>";
   }
   const metin = $("#isMetni"), gonder = $("#isGonder");
