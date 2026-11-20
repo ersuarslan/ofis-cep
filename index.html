@@ -50,7 +50,7 @@ h2{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px}
 .gm #gmOzet.kisa{max-height:7.5em;overflow:hidden}
 .gm .devam{position:relative;z-index:1;margin-top:8px;background:none;border:0;padding:0;color:var(--mor);font:700 13px var(--display);cursor:pointer}
 .is-ver{display:flex;flex-direction:column;gap:10px}
-textarea,input[type=password]{width:100%;font:inherit;color:inherit;background:var(--yuzey2);border:1px solid var(--cizgi);border-radius:18px;padding:12px 14px}
+textarea,input[type=password],input[type=text]{width:100%;font:inherit;color:inherit;background:var(--yuzey2);border:1px solid var(--cizgi);border-radius:18px;padding:12px 14px}
 textarea{resize:vertical;min-height:72px}
 textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--pembe);outline-offset:2px}
 .hap{display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:var(--display);font-weight:700;font-size:14px;padding:10px 16px;border-radius:999px;text-decoration:none;border:0;cursor:pointer}
@@ -137,7 +137,8 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
 <div class="kilit" id="kilit">
   <form id="kilitForm" autocomplete="on">
     <h1>Claude Ofis</h1>
-    <p class="not">Ofis verisi şifreli. Açmak için ofis şifrenizi yazın.</p>
+    <p class="not">Ofis verisi şifreli. Sana verilen ad ve şifreyle gir.</p>
+    <input id="kAd" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="Adın">
     <input id="sifre" type="password" autocomplete="current-password" placeholder="Şifre" required>
     <label class="kutu"><input type="checkbox" id="hatirla" checked> Bu cihazda hatırla</label>
     <button class="hap ana" id="ac">Aç</button>
@@ -188,6 +189,7 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
   const durumAd = {hazir:"Hazır", calisiyor:"Çalışıyor", tamam:"Rapor teslim", beklemede:"Beklemede"};
   const isDurumAd = {calisiyor:"⏳ Çalışıyor", bitti:"✅ Bitti", hata:"⚠️ Hata", sirada:"🕒 Sırada"};
   const DEPOLAMA = "ofis-cep-anahtar";
+  try { const sa = localStorage.getItem("ofis-cep-ad"); if (sa) document.getElementById("kAd").value = sa; } catch (x) {}
   let veri = null, depo = "", anahtar = null;
 
   /* ---------- şifre çözme (PBKDF2-SHA256 -> AES-256-CBC + HMAC-SHA256) ---------- */
@@ -217,7 +219,7 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
     try {
       const paket = await paketGetir();
       const k = anahtar || kayitliAnahtar();
-      if (!k || k.salt !== paket.salt) { kilitGoster(sessiz ? "" : ""); return; }
+      if (!k || k.salt !== paket.salt) { kilitGoster(k ? "Erişim yenilendi; adın ve şifrenle yeniden gir." : ""); if (k) { try { localStorage.removeItem(DEPOLAMA); } catch (x) {} anahtar = null; } return; }
       anahtar = k;
       ciz(await coz(paket, b64(k.bitler)));
       $("#kilit").hidden = true; $("#uygulama").hidden = false;
@@ -233,14 +235,28 @@ textarea:focus-visible,input:focus-visible,a:focus-visible,button:focus-visible,
     const b = $("#ac"); b.disabled = true; $("#kilitHata").textContent = "Açılıyor…";
     try {
       const paket = await paketGetir();
-      const bitler = await turet($("#sifre").value, b64(paket.salt), paket.iter);
+      const ad = $("#kAd").value.trim();
+      let bitler;
+      if (ad) {
+        // kişi başına şifre: kişinin kopyasını bul, kendi şifresiyle aç, içinden ofis anahtarını al
+        const kl = await fetch("kisiler.json?t=" + Date.now(), {cache: "no-store"}).then(r => r.ok ? r.json() : null).catch(() => null);
+        const ozet = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("ofis-cep|" + ad.toLowerCase())))).map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 24);
+        const g = kl && (kl.kisiler || []).find(x => x.k === ozet);
+        if (!g) throw new Error("ad");
+        const sar = await coz(g, await turet($("#sifre").value, b64(g.salt), g.iter));
+        if (sar.tuz !== paket.salt) throw new Error("bekle");
+        bitler = b64(sar.bitler);
+        try { localStorage.setItem("ofis-cep-ad", ad); } catch (x) {}
+      } else {
+        bitler = await turet($("#sifre").value, b64(paket.salt), paket.iter);
+      }
       const d = await coz(paket, bitler);
       anahtar = {salt: paket.salt, bitler: b64Yaz(bitler)};
       if ($("#hatirla").checked) { try { localStorage.setItem(DEPOLAMA, JSON.stringify(anahtar)); } catch (x) {} }
       $("#sifre").value = ""; $("#kilitHata").textContent = "";
       ciz(d); $("#kilit").hidden = true; $("#uygulama").hidden = false;
     } catch (err) {
-      $("#kilitHata").textContent = err.message === "ag" ? "Veri indirilemedi; bağlantıyı kontrol edin." : "Şifre yanlış.";
+      $("#kilitHata").textContent = err.message === "ag" ? "Veri indirilemedi; bağlantıyı kontrol edin." : err.message === "ad" ? "Bu ad kayıtlı değil (ya da yeni eklendi; 1-2 dakika sonra dene)." : err.message === "bekle" ? "Erişim güncelleniyor; 1-2 dakika sonra tekrar dene." : "Şifre yanlış.";
     }
     b.disabled = false;
   });
